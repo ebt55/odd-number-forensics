@@ -33,24 +33,26 @@ GREY, DARKGREY = "#BBBBBB", "#444444"
 HEAT = LinearSegmentedColormap.from_list("heat", ["#F7F7F7", "#9ECAE1", "#0072B2"])
 
 # f1: the salience/consequence ladder, canonical first then the replication variants.
+# Second element is the human-readable tick label - the internal condition id is what
+# the code keys on (highlighting, lookups); the label is only ever displayed.
 LADDER = [
-    ("spine_ieven_rodd", "canonical"),
-    ("can_soft", "can_soft"),
-    ("lw_f_order", "lw_f_order"),
-    ("lw_para3", "lw_para3"),
-    ("lw_tag_grading", "lw_tag_grading"),
-    ("lw_f_instr", "lw_f_instr"),
-    ("lw_matchedtag", "lw_matchedtag"),
-    ("lw_para2", "lw_para2"),
-    ("lw_base", "lw_base"),
-    ("lw_f_channel", "lw_f_channel"),
-    ("lw_applies", "lw_applies"),
-    ("lw_f_payload", "lw_f_payload"),
-    ("lw_payload_mag1", "lw_payload_mag1"),
-    ("lw_payload_mag1e6", "lw_payload_mag1e6"),
-    ("lw_inert", "lw_inert"),
-    ("lw_priority", "lw_priority"),
-    ("lw_mirror_conflict", "lw_mirror_conflict"),
+    ("spine_ieven_rodd", "canonical conflict"),
+    ("can_soft", "soft instr + user function"),
+    ("lw_f_order", "hint first"),
+    ("lw_para3", '"please" paraphrase'),
+    ("lw_tag_grading", "<_grading> tag"),
+    ("lw_f_instr", "imperative instruction"),
+    ("lw_matchedtag", "fixed tag"),
+    ("lw_para2", '"pick" paraphrase'),
+    ("lw_base", "BASE ENVIRONMENT"),
+    ("lw_f_channel", "user-visible function"),
+    ("lw_applies", "declared applicable"),
+    ("lw_f_payload", "payload spelled out"),
+    ("lw_payload_mag1", "payload 1"),
+    ("lw_payload_mag1e6", "payload 1,000,000"),
+    ("lw_inert", "declared inert"),
+    ("lw_priority", "priority clause"),
+    ("lw_mirror_conflict", "mirror direction"),
 ]
 CONGRUENT_CELLS = ("lw_congruent", "lw_mirror_congruent")
 
@@ -148,7 +150,10 @@ def fig_ladder(rows: list[dict[str, Any]], model: str = "openai:o3") -> Path:
             cn += stat[1]
     congruent = ck / cn if cn else None
 
-    fig, ax = plt.subplots(figsize=(9.5, 7.2))
+    # Wide-and-short on purpose: the PNG is placed at text width in the report, so the
+    # aspect ratio here is what decides its rendered height on the page - and the hole
+    # under the 2.3 heading is only ~4.2in tall, so the whole block has to fit that.
+    fig, ax = plt.subplots(figsize=(11.8, 5.95))
     ypos = range(len(data))
     colours = [ORANGE if d[1] == "lw_base" else BLUE for d in data]
     ax.barh(list(ypos), [d[2] for d in data], color=colours, height=0.68, zorder=3)
@@ -156,20 +161,27 @@ def fig_ladder(rows: list[dict[str, Any]], model: str = "openai:o3") -> Path:
                 xerr=[[d[2] - d[3] for d in data], [d[4] - d[2] for d in data]],
                 fmt="none", ecolor=DARKGREY, elinewidth=1.1, capsize=3, zorder=4)
     for y, d in zip(ypos, data):
-        ax.text(d[4] + 0.012, y, f"n={d[5]}", va="center", fontsize=8, color=DARKGREY)
+        ax.text(d[4] + 0.012, y, f"n={d[5]}", va="center", fontsize=9.5, color=DARKGREY)
 
+    # Room under the lowest bar for the congruent-control readout: when the control sits
+    # at 0 its rule hugs the axis, and the label would otherwise land on the top bar.
+    ax.set_ylim(-1.4, len(data) - 0.45)
     if congruent is not None:
-        ax.axvline(congruent, color=VERMILLION, linestyle="--", linewidth=1.4, zorder=5)
-        ax.text(congruent + 0.006, len(data) - 0.4,
+        ax.axvline(congruent, color=VERMILLION, linestyle="--", linewidth=1.6, zorder=5)
+        ax.text(congruent + 0.008, -1.0,
                 f"congruent control  {congruent:.3f}  (n={cn})",
-                color=VERMILLION, fontsize=8.5, va="top")
+                color=VERMILLION, fontsize=10, va="center", ha="left", zorder=6)
 
     ax.set_yticks(list(ypos))
-    ax.set_yticklabels([d[0] for d in data], fontsize=9)
-    ax.set_xlabel("audited violation rate (answers with the parity the instruction "
-                  "did NOT ask for)")
-    ax.set_title(f"Prompt-form ladder - {short(model)}\n"
-                 "Wilson 95% CI; audit decisions applied", fontsize=12)
+    ax.set_yticklabels([d[0] for d in data], fontsize=11)
+    for tick, d in zip(ax.get_yticklabels(), data):
+        if d[1] == "lw_base":
+            tick.set_fontweight("bold")
+            tick.set_color("#8a5a00")
+    ax.tick_params(axis="x", labelsize=10)
+    ax.set_xlabel("audited violation rate - answers with the parity the instruction did "
+                  "NOT ask for\nWilson 95% CI; audit decisions applied", fontsize=10.5)
+    ax.set_title(f"{short(model)} cue ladder - one edit at a time", fontsize=14)
     ax.set_xlim(0, max(0.05, min(1.0, max(d[4] for d in data) + 0.12)))
     ax.grid(axis="x", color=GREY, alpha=0.5, zorder=0)
     ax.set_axisbelow(True)

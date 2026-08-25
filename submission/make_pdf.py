@@ -42,7 +42,11 @@ MAX_PAGES = 8
 FIGURE = "f1_ladder.png"
 FIG_CAPTION = ("Figure 1 - o3 cue ladder: audited violation rate, one edit at a time "
                "(Wilson 95% CIs; n at bar ends).")
-MAX_FIG_H = 5.5 * inch
+# The figure has to fit under the 2.3 heading plus its paragraph on one page; anything
+# taller breaks to the next page and leaves half of this one blank.
+MAX_FIG_H = 4.1 * inch
+
+LINK_BLUE = "#0b52a8"     # readable on white, and unmistakably a link
 
 TITLE_TEXT = "Why Do Models Output Odd Numbers When Asked for Even Ones?"
 
@@ -110,8 +114,9 @@ def inline(text: str, code_size: float = 8.6) -> str:
     def do_link(m: re.Match) -> str:
         label, url = html.escape(m.group(1)), html.escape(m.group(2), quote=True)
         if url.startswith(("http://", "https://")):
-            # Show the URL itself so the address survives conversion to DOCX.
-            return stash(f'{label} (<link href="{url}" color="blue">{url}</link>)')
+            # A real link annotation on the label: reportlab emits /Link + /URI, which
+            # exactdoc lifts into a w:hyperlink so the DOCX stays clickable too.
+            return stash(f'<link href="{url}" color="{LINK_BLUE}">{label}</link>')
         return stash(f'<font face="Courier" size="{code_size}">{label}</font>')
 
     text = CODE_RE.sub(do_code, text)
@@ -472,6 +477,7 @@ SENTINELS = [
     "task reinterpretation", "o3 x1.8", "36.7%", "0/30",
     "A Toy Environment For Exploring Reasoning About Reward",
     "Why Do Models Output Odd Numbers",
+    "odd-number-forensics",
 ]
 
 

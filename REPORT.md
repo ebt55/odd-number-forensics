@@ -368,6 +368,7 @@ unlockers may exist.
 
 ## 6. Reproducibility
 
+Public repository: [github.com/ebt55/odd-number-forensics](https://github.com/ebt55/odd-number-forensics).
 `experiments/oddnum/`: [SPEC.md](experiments/oddnum/SPEC.md) (byte-exact prompts;
 `conditions.py --selfcheck`), [PREREG.md](experiments/oddnum/PREREG.md) (hypotheses,
 decision matrix, both addenda, falsified predictions), [RUNPLAN.md](experiments/oddnum/RUNPLAN.md),

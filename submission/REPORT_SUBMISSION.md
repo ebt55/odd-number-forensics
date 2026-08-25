@@ -4,7 +4,7 @@
 *Ebin Babu Thomas — investigation conducted with Claude Fable 5 (orchestration and analysis)
 and Claude Opus 5 (implementation agents) · 2026-08-26 · Model Forensics SPAR take-home ·
 ~5,300 audited samples, 34 conditions run, 35 model-arms · full code, raw data, and audit
-trail: `experiments/oddnum/` in the accompanying repository*
+trail: [github.com/ebt55/odd-number-forensics](https://github.com/ebt55/odd-number-forensics)*
 
 ---
 
@@ -281,12 +281,14 @@ failed (HTTP 400, pre-Claude-5 API shape) and were rerun cleanly after a provide
 
 ## 5. Reproducibility and sources
 
-The repository ships byte-exact prompts (`conditions.py --selfcheck`), the preregistration
-with falsified predictions marked, every raw sample, the 32-ruling audit file applied
-mechanically by `consolidate.py`, run manifests, figures, and the full toolchain. Total API
-spend ≈ $20–25. Sources: Nitishinskaya & Schoen, *A Toy Environment For Exploring Reasoning
-About Reward* (lesswrong.com/posts/LhXW8ziwnn7Dd8edm), and (OpenAI + Apollo Research)
-*Metagaming matters for training, evaluation, and oversight*
-(alignment.openai.com/metagaming); Singh, Nanda & Rajamanoharan, *Why do models task game?*
-(lesswrong.com/posts/HACauvWhEdC6QhdS4). Models accessed via public APIs at default
-sampling, 2026-08-25/26.
+The repository — [github.com/ebt55/odd-number-forensics](https://github.com/ebt55/odd-number-forensics) —
+ships byte-exact prompts (`conditions.py --selfcheck`), the preregistration with falsified
+predictions marked, every raw sample, the 32-ruling audit file applied mechanically by
+`consolidate.py`, run manifests, figures, and the full toolchain. Total API spend ≈ $20–25.
+Sources: Nitishinskaya & Schoen, *A Toy Environment For Exploring Reasoning About Reward*
+([lesswrong.com/posts/LhXW8ziwnn7Dd8edm](https://www.lesswrong.com/posts/LhXW8ziwnn7Dd8edm/a-toy-environment-for-exploring-reasoning-about-reward)),
+and (OpenAI + Apollo Research) *Metagaming matters for training, evaluation, and oversight*
+([alignment.openai.com/metagaming](https://alignment.openai.com/metagaming));
+Singh, Nanda & Rajamanoharan, *Why do models task game?*
+([lesswrong.com/posts/HACauvWhEdC6QhdS4](https://www.lesswrong.com/posts/HACauvWhEdC6QhdS4/why-do-models-task-game)).
+Models accessed via public APIs at default sampling, 2026-08-25/26.
