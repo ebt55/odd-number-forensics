@@ -1,0 +1,6 @@
+*.pdf binary
+*.docx binary
+*.png binary
+*.md text
+*.py text
+*.jsonl text eol=lf
