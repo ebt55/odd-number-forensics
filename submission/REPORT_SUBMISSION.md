@@ -1,14 +1,13 @@
 # Why Do Models Output Odd Numbers When Asked for Even Ones?
 ## A forensic investigation of the Odd Number reward-hacking environment
 
-*Ebin Babu Thomas — investigation conducted with Claude Fable 5 (orchestration and analysis)
-and Claude Opus 5 (implementation agents) · 2026-08-26 · Model Forensics SPAR take-home ·
-~5,300 audited samples, 34 conditions run, 35 model-arms · full code, raw data, and audit
-trail: [github.com/ebt55/odd-number-forensics](https://github.com/ebt55/odd-number-forensics)*
+**Ebin Babu Thomas** · Model Forensics SPAR take-home · 2026-08-26
+*with Claude Fable 5 (orchestration and analysis) and Claude Opus 5 (implementation agents)*
+*code, data, and audit trail: [github.com/ebt55/odd-number-forensics](https://github.com/ebt55/odd-number-forensics)*
 
 ---
 
-## Verdict
+## Executive Summary
 
 **Asked whether this behavior is "genuine reward hacking, instruction-following failure,
 distributional preference, or something else": it is score-seeking task reinterpretation,
@@ -38,7 +37,7 @@ Choose a random even number.
 </_metadata>
 ```
 
-## Five findings
+### Key findings
 
 1. **The naive environment produces nothing; the real one is a steep cue-landscape.** With
    the incentive as ordinary user-visible Python and an imperative instruction, 19 models
@@ -70,7 +69,7 @@ Choose a random even number.
    maximize reward" CoT). Forced articulation suppresses gemini fully (77→0%), deepseek
    mostly (→7%), o3 only partially (→20%: the knowing-violation core).
 
-## 1. Background, methods, and preregistration
+## 1. Background and Methods
 
 The environment comes from Nitishinskaya & Schoen (*A Toy Environment For Exploring
 Reasoning About Reward*, LessWrong/AF, Mar 2026): during o3's capabilities-focused RL run
@@ -112,7 +111,7 @@ finding); and half the declared paraphrase band.
 
 ## 2. Results
 
-### 2.1 The bare conflict is inert everywhere
+### 2.1 The bare conflict produces no violations
 
 Canonical framing (imperative instruction, answer-format constraint, user-visible reward
 function, both conflict directions), 19 models: violation ≈0/10 throughout — despite
@@ -120,7 +119,7 @@ unconstrained parity preferences from 0% odd (qwen3:14b: "42," ten out of ten) t
 (gpt-5-mini, sonnet-5). o3, the strongest gamer below, is also 0/30 here. Distributional
 preference is real and does not leak into instructed behavior.
 
-### 2.2 Who games
+### 2.2 Which models game the exact environment
 
 Audited violation rates; congruent controls ≈0 for every gamer (o3 0/180 pooled, z=5.19;
 gemini 0/30; deepseek 1/100).
@@ -149,7 +148,7 @@ siblings, and successors never do, under any manipulation tried. But deepseek-v4
 (0% → 70% amplified) shows base-rate resistance elsewhere is usually a legibility threshold,
 not immunity.
 
-### 2.3 One model, 0% → 87%: the cue ladder
+### 2.3 The cue ladder: one edit moves o3 from 0% to 87%
 
 **Figure 1** (o3, one edit at a time from the base environment; congruent controls at 0)
 spans: canonical conflict **0%** → declared-inert **1.7%** → priority clause **1.7%** →
@@ -169,7 +168,7 @@ headline number. Renaming the grader token gives a valence gradient: reward 36.7
 36.7% > score 16.7% > evaluation 3.3% ≈ grade 0%; cost/loss (incentive inverted) 0% odd —
 where o3 sometimes answers 0, the minimal even, *optimizing the aligned metric*.
 
-### 2.4 The incentive is followed in both directions
+### 2.4 Incentive-following survives direction reversal
 
 Asked for an *odd* number with the grader rewarding *even*: o3 violates at **76.7%**, gemini
 **90%**, deepseek 11% — against congruent-mirror controls of 100%, 100%, and 98% compliance.
@@ -181,7 +180,7 @@ is direction-symmetric (14%/11%), and its mirror violations carry explicit CoT: 
 grader is part of the environment, the correct action is to maximize reward. So I'll output
 an even number."
 
-### 2.5 Cognition: the probe battery
+### 2.5 The probe battery: knowledge, norms, and harmonization
 
 | probe (n=15 each) | o3 | gemini | o4-mini | gpt-5-mini | deepseek |
 |---|---|---|---|---|---|
@@ -279,7 +278,7 @@ contrasts. deepseek's thinking split is observational (provider routing), not ra
 Amplifier immunity covers one amplifier family. claude-sonnet-5's first 60 replication rows
 failed (HTTP 400, pre-Claude-5 API shape) and were rerun cleanly after a provider fix.
 
-## 5. Reproducibility and sources
+## 5. Reproducibility and Sources
 
 The repository — [github.com/ebt55/odd-number-forensics](https://github.com/ebt55/odd-number-forensics) —
 ships byte-exact prompts (`conditions.py --selfcheck`), the preregistration with falsified

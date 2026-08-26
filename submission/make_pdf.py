@@ -25,8 +25,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import (BaseDocTemplate, Frame, HRFlowable, Image, KeepTogether,
-                                PageTemplate, Paragraph, Preformatted, Spacer, Table,
-                                TableStyle)
+                                PageTemplate, Paragraph, Spacer, Table, TableStyle)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -47,6 +46,22 @@ FIG_CAPTION = ("Figure 1 - o3 cue ladder: audited violation rate, one edit at a 
 MAX_FIG_H = 4.1 * inch
 
 LINK_BLUE = "#0b52a8"     # readable on white, and unmistakably a link
+
+# Fenced blocks are laid out as a one-row-per-line table rather than a Preformatted
+# flowable. A Preformatted block carries its line breaks only as glyph positions, so
+# the PDF->DOCX pass re-flows the whole block into a single paragraph - and for the
+# environment specimen the line structure IS the object under study. A table gives the
+# converter drawn cell boundaries to rebuild the rows from. Fill and grid are painted
+# in the same colour, so the panel is seamless on the page: set CODE_PANEL to a tint
+# (e.g. colors.HexColor("#eef2f6")) if a visible code panel is ever wanted.
+CODE_INDENT = 12
+CODE_PANEL = colors.white
+CODE_LEADING = 10.6      # the specimen's visual line pitch, i.e. the table row pitch
+# reportlab paints table lines after cell content, so a boundary sitting right under a
+# baseline shaves the descenders - `<_metadata>`'s underscore, in this document. The
+# cell gives that much of its leading back as bottom padding: the row pitch and the
+# block height are unchanged, the glyphs just sit clear of the line.
+CODE_DESC_PAD = 1.2
 
 TITLE_TEXT = "Why Do Models Output Odd Numbers When Asked for Even Ones?"
 
@@ -131,6 +146,16 @@ def inline(text: str, code_size: float = 8.6) -> str:
     return text
 
 
+FULL_ITALIC_RE = re.compile(r"^\*(?!\s)(.*[^\s])\*$", re.DOTALL)
+
+
+def unitalic(line: str) -> str:
+    """Drop a whole-line italic wrapper: the credit lines render in an italic style
+    already, so the markers would only fight the paragraph font."""
+    m = FULL_ITALIC_RE.match(line.strip())
+    return m.group(1) if m and "*" not in m.group(1) else line
+
+
 def plain(text: str) -> str:
     """Markdown stripped to bare text, for width heuristics."""
     text = CODE_RE.sub(r"\1", sanitize(text))
@@ -154,10 +179,16 @@ def build_styles() -> dict[str, ParagraphStyle]:
         "title": ParagraphStyle("title", fontName="Helvetica-Bold", fontSize=20,
                                 leading=23.5, alignment=TA_CENTER, spaceAfter=5),
         "subtitle": ParagraphStyle("subtitle", fontName="Helvetica", fontSize=13,
-                                   leading=16, alignment=TA_CENTER, spaceAfter=7,
+                                   leading=16, alignment=TA_CENTER, spaceAfter=6,
                                    textColor=NAVY),
+        # The attribution block is three centred lines: a lead line carrying the author
+        # and the occasion, then two smaller credit lines. Leading is deliberately tight
+        # so the three of them read as one unit above the rule.
+        "attriblead": ParagraphStyle("attriblead", fontName="Times-Roman", fontSize=10,
+                                     leading=12, alignment=TA_CENTER, spaceAfter=2,
+                                     textColor=colors.HexColor("#222222")),
         "attrib": ParagraphStyle("attrib", fontName="Times-Italic", fontSize=9,
-                                 leading=11.6, alignment=TA_CENTER, spaceAfter=4,
+                                 leading=10.8, alignment=TA_CENTER, spaceAfter=1.5,
                                  textColor=GREY),
         "h2": ParagraphStyle("h2", fontName="Helvetica-Bold", fontSize=13, leading=15.5,
                              spaceBefore=11, spaceAfter=5, textColor=NAVY),
@@ -170,8 +201,9 @@ def build_styles() -> dict[str, ParagraphStyle]:
                                 textColor=colors.HexColor("#333333")),
         "cap": ParagraphStyle("cap", fontName="Times-Italic", fontSize=8.5, leading=10.6,
                               alignment=TA_CENTER, spaceBefore=4, spaceAfter=8),
-        "code": ParagraphStyle("code", fontName="Courier", fontSize=8.4, leading=10.6,
-                               leftIndent=12, spaceBefore=3, spaceAfter=7),
+        # Indent and the space around the block belong to the table, not the cell.
+        "code": ParagraphStyle("code", fontName="Courier", fontSize=8.4,
+                               leading=CODE_LEADING),
         "cell": ParagraphStyle("cell", fontName="Times-Roman", fontSize=8.5, leading=10.6),
         "cellh": ParagraphStyle("cellh", fontName="Helvetica-Bold", fontSize=8.5,
                                 leading=10.6),
@@ -281,7 +313,9 @@ def parse(md: str) -> list[dict]:
             para.append(nxt)
             i += 1
         if para:
-            blocks.append({"kind": "para", "text": " ".join(para)})
+            # "lines" keeps the source line breaks, which the title block needs: its
+            # attribution is written one rendered line per source line.
+            blocks.append({"kind": "para", "text": " ".join(para), "lines": para})
     return blocks
 
 
@@ -357,6 +391,44 @@ def make_quote(paras: list[str], styles: dict) -> Table:
     return table
 
 
+CODE_SPACE_RE = re.compile(r"^ +| {2,}")
+
+
+def code_cell(line: str) -> str:
+    """Escaped code text with runs of spaces pinned - Paragraph collapses them, and
+    indentation inside a specimen is meaningful."""
+    esc = CODE_SPACE_RE.sub(lambda m: "&nbsp;" * len(m.group(0)), html.escape(line))
+    return esc or "&nbsp;"
+
+
+def make_code(lines: list[str], styles: dict) -> Table:
+    """A fenced block as one borderless table row per source line.
+
+    Geometry is chosen to match the Preformatted block this replaces exactly: zero
+    vertical padding means each row is one leading (10.6pt), the cell's left padding
+    reproduces the old 12pt indent, and the table carries the same 3/7pt space above
+    and below. The column spans the frame's full inner width (AVAIL_W less the 6pt
+    frame padding on each side), so the panel runs margin to margin behind the text.
+    """
+    body = [sanitize(line) for line in lines]
+    assert_winansi("\n".join(body), "code block")
+    table = Table([[Paragraph(code_cell(line), styles["code"])] for line in body],
+                  colWidths=[AVAIL_W - 12], hAlign="LEFT")
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), CODE_PANEL),
+        # Same colour as the fill: invisible on the page, but it hands the converter
+        # a drawn boundary per row instead of four lines of free-flowing text.
+        ("GRID", (0, 0), (-1, -1), 0.4, CODE_PANEL),
+        ("LEFTPADDING", (0, 0), (-1, -1), CODE_INDENT),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), CODE_DESC_PAD),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ]))
+    table.spaceBefore, table.spaceAfter = 3, 7
+    return table
+
+
 def make_figure(styles: dict) -> list:
     path = FIGS / FIGURE
     if not path.exists():
@@ -378,6 +450,7 @@ def build_story(blocks: list[dict], styles: dict) -> list:
     story: list = []
     section = ""
     in_header = True
+    header_lines = 0
     figure_done = False
 
     for block in blocks:
@@ -398,7 +471,11 @@ def build_story(blocks: list[dict], styles: dict) -> list:
 
         elif kind == "para":
             if in_header:
-                story.append(Paragraph(inline(block["text"]), styles["attrib"]))
+                for line in block["lines"]:
+                    lead = header_lines == 0
+                    story.append(Paragraph(inline(line if lead else unitalic(line)),
+                                           styles["attriblead" if lead else "attrib"]))
+                    header_lines += 1
                 continue
             story.append(Paragraph(inline(block["text"]), styles["body"]))
             if not figure_done and section.startswith("2.3") and "Figure 1" in block["text"]:
@@ -417,14 +494,12 @@ def build_story(blocks: list[dict], styles: dict) -> list:
             story.append(Spacer(1, 6))
 
         elif kind == "code":
-            body = "\n".join(sanitize(l) for l in block["lines"])
-            assert_winansi(body, "code block")
-            story.append(Preformatted(body, styles["code"]))
+            story.append(make_code(block["lines"], styles))
 
         elif kind == "hr":
             if in_header:
                 # The thin rule that closes the compact title block.
-                story.append(Spacer(1, 2))
+                story.append(Spacer(1, 5))
                 story.append(HRFlowable(width="100%", thickness=0.7, color=RULE))
                 story.append(Spacer(1, 7))
                 in_header = False
@@ -478,6 +553,7 @@ SENTINELS = [
     "A Toy Environment For Exploring Reasoning About Reward",
     "Why Do Models Output Odd Numbers",
     "odd-number-forensics",
+    "Executive Summary",
 ]
 
 

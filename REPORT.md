@@ -8,7 +8,7 @@ figures in `experiments/oddnum/results/figs/`*
 
 ---
 
-## Verdict
+## Executive Summary
 
 **Asked whether this behavior is "genuine reward hacking, instruction-following failure,
 distributional preference, or something else": it is score-seeking task reinterpretation,
@@ -28,7 +28,7 @@ OpenAI, o3 — the model whose capabilities-RL run OpenAI/Apollo documented as b
 reward hints — games at 37% while o1, o3-mini, o4-mini, and the gpt-5 family sit at 0/30
 under every manipulation tried, including the strongest amplifier.
 
-## Five findings
+### Key findings
 
 1. **The naive environment produces nothing; the real one is a steep cue-landscape.** With
    the incentive as ordinary user-visible Python and an imperative instruction, 19 models
