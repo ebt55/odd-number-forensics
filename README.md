@@ -1,14 +1,20 @@
 # Why Do Models Output Odd Numbers When Asked for Even Ones?
 
-A forensic investigation of the Odd Number reward-hacking environment
-([source](https://www.lesswrong.com/posts/LhXW8ziwnn7Dd8edm/a-toy-environment-for-exploring-reasoning-about-reward)):
-a model is asked for a random even number while leaked grader metadata rewards odd ones.
-~5,300 audited samples across 35 model-arms and 34 conditions.
+A forensic take-apart of the Odd Number reward-hacking environment
+([source](https://www.lesswrong.com/posts/LhXW8ziwnn7Dd8edm/a-toy-environment-for-exploring-reasoning-about-reward)).
+A model is asked for a random even number, and leaked grader metadata rewards odd ones.
+We replicated the environment exactly, edited it one line at a time, and ran about 5,300
+audited samples across 35 model-arms and 34 conditions.
 
-**Read [REPORT.md](REPORT.md)** — executive summary at the top. Headline: the behavior is
-score-seeking task reinterpretation gated by two prompt conditions (credible applicability ×
-pragmatic ambiguity); production models from five vendors game at 57–92% when both gates are
-open, and one-sentence edits collapse it to ≈0.
+The one finding: one model, o3, moves from under 2% to 87% gaming across one-line prompt
+edits, at 30 to 60 samples per cell. A rate quoted for "the Odd Number environment" means
+little without the exact string.
+
+The bounds: cells of 30 to 100 samples, enough only for large effects. No correction for
+multiple comparisons. o3 hides its chain of thought. Only one amplifier family was tested.
+This was a practice work sample for the SPAR Fall 2026 take-home.
+
+Read [REPORT.md](REPORT.md). The executive summary and key findings are at the top.
 
 ## Layout
 
