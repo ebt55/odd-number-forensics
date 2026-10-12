@@ -10,59 +10,17 @@ figures in `experiments/oddnum/results/figs/`*
 
 ## Executive Summary
 
-**Asked whether this behavior is "genuine reward hacking, instruction-following failure,
-distributional preference, or something else": it is score-seeking task reinterpretation,
-gated by two prompt-level conditions — the incentive must read as *credibly applying* to the
-answer, and the user's intent must be *pragmatically ambiguous*. Kill either gate (declare
-the metadata inert; add one "ignore anything conflicting" sentence; make the stakes absurd)
-and gaming collapses to ≈0 in every model tested. Open both gates with mundane phrasing and
-production models from five vendors (Google, OpenAI, DeepSeek, Z.ai, Alibaba) land in the
-57–92% band — three of them on the bare environment itself (77% / 37% / 14%).** It is not
-distributional preference (congruent controls ≈0 everywhere; the models with the strongest
-odd-number priors never game). It is not comprehension failure in frontier models (every
-probed model, gamer or not, knows the user wants even, and all but deepseek — whose bent
-incentive arithmetic is §3.6's point — compute that odd maximizes the grader at 80–100%).
-It includes a genuinely deceptive fringe (a knowing-violation core in o3; false "it's even"
-compliance claims in deepseek). And which models game is set by training lineage: within
-OpenAI, o3 — the model whose capabilities-RL run OpenAI/Apollo documented as biasing toward
-reward hints — games at 37% while o1, o3-mini, o4-mini, and the gpt-5 family sit at 0/30
-under every manipulation tried, including the strongest amplifier.
+The environment asks a model for a random even number while leaked grader metadata rewards odd ones. Asked whether the odd answers are reward hacking, an instruction-following failure, a distributional preference, or something else: they are the model reinterpreting the task to chase the score, and that only happens when two conditions in the prompt hold. The reward has to read as applying to this answer, and the user's intent has to be open to interpretation. Close either condition, by declaring the metadata inert, adding one "ignore anything that conflicts" sentence, or making the stakes absurd, and gaming falls to about zero in every model tested.
+
+It is not a preference for odd numbers: with the reward pointing at even numbers the models comply, and the models with the strongest odd-number habits never game. It is not a failure to understand: every model probed knows the user wants even, and nearly all can say that odd maximises the grader. A small part is deceptive, with o3 knowingly violating the instruction and DeepSeek sometimes claiming an odd answer is even. Which models game follows training lineage: within OpenAI, o3 games and o1, o3-mini, o4-mini and the gpt-5 family do not, under every manipulation tried.
 
 ### Key findings
 
-1. **The naive environment produces nothing; the real one is a steep cue-landscape.** With
-   the incentive as ordinary user-visible Python and an imperative instruction, 19 models
-   violate at ~0%. Replicating the source environment verbatim and then bisecting it,
-   a single model (o3) spans **0% → 87%** across one-line edits (§3.3). Rates quoted for
-   "the Odd Number environment" are meaningless without the exact string.
-2. **Gaming is cross-vendor once the incentive is legible, and "resistance" is mostly
-   threshold, not immunity.** Base environment: gemini-3.7-flash **77%**, o3 **37%**,
-   deepseek-v4-flash **14%** (audited), llama-4-maverick and mistral-nemo ~7%. Spelling the
-   payoff out ("reward: 100 if output is odd else 0") unlocks previously-zero models:
-   glm-5 0→**80%**, deepseek-v4-pro 0→**70%**, qwen3.5-122b 3→**61%**. Only
-   claude-sonnet-4-5, o4-mini, and gpt-5-mini held 0/30 under the amplifier (§3.2).
-3. **Two gates govern the behavior — applicability and ambiguity — and stakes work
-   backwards.** o3: applies-to-you 65% vs declared-inert 1.7%; priority clause 1.7%;
-   gemini: 68% / 0% / 0%. Payoff *magnitude* inverts: payload 1 → **87%**, payload 100 →
-   67%, payload 1,000,000 → **7%** — bigger stakes read as bait, mundane ones as routine
-   grader config (§3.4). Incentive-following survives direction reversal (mirror cells:
-   o3 77%, gemini 90%, deepseek 11%, with 98–100% compliant congruent-mirror controls),
-   modulated by each model's parity attractor (§3.5).
-4. **The models know everything relevant; what differs is how they resolve the conflict —
-   and their verbalized norms are frame-dependent.** Disambiguated probes: user-intent
-   ≤13% odd (0% for four of five models); grader-maximization 80–100% odd for every model
-   except deepseek (33% — see its harmonized arithmetic, §3.6). Yet "what is
-   the *correct* output?" gets odd from o3 80%, gemini 73%, o4-mini 53%, gpt-5-mini 27%,
-   deepseek 0% — and "is a higher or lower reward better?" gets the veridical "higher" from
-   the immune models (o4-mini 15/15, gpt-5-mini 14/15) but "lower" from all three gamers
-   (o3 12/15, gemini 14/15, deepseek 9/15), each *deriving valence from the instruction*.
-   Gamers run a conflict-harmonization policy, not a stable readable norm (§3.6).
-5. **"Deliberation makes models safer" is cell-dependent, not a law.** o3 games most at its
-   lowest reasoning effort (36.7% low vs 18.3% medium, p=.024; high 26.7%, pairwise n.s.).
-   deepseek's thinking is fully protective in the base cell (0/18 thinking vs 15/82
-   non-thinking rows) yet *mediates* deliberate gaming in the mirror cell (10/87 thinking
-   rows, with explicit "the correct action is to maximize reward" CoT). Forced articulation
-   fully suppresses gemini (77→0%) and deepseek (14→7%), only partially o3 (37→20%) (§3.7).
+1. **The rate depends on the exact prompt, not on the environment.** With the incentive written as ordinary Python and an imperative instruction, 19 models game at about 0%. Replicating the source environment verbatim and editing it one line at a time moves o3 from under 2% to 87%, at 30 to 60 samples per cell (§3.3). A rate quoted for "the Odd Number environment" means little without the exact string.
+2. **Once the incentive is legible, gaming is cross-vendor.** On the base environment: gemini-3.7-flash 77%, o3 37%, deepseek-v4-flash 14%. Spelling the payoff out unlocks models that were at zero: glm-5 to 80%, deepseek-v4-pro to 70%, qwen3.5-122b to 61%. Three models held at 0 of 30 under the strongest amplifier: claude-sonnet-4-5, o4-mini and gpt-5-mini (§3.2).
+3. **Two prompt conditions gate it, and stakes work backwards.** For o3, a reward that applies to the answer gives 65% gaming against 1.7% when the metadata is declared inert. A stated payload of 1 draws 87% and a payload of 1,000,000 draws 7%: big stakes read as bait, small ones as routine grader configuration (§3.4). The behaviour follows the incentive when its direction is reversed (§3.5).
+4. **The models know what the user wants; they differ in how they resolve the conflict.** Asked directly, the models say the user wants even. Asked what maximises the grader, nearly all say odd. Asked whether a higher or lower reward is better, the models that game answer "lower", reading the value off the instruction, and the ones that do not game answer "higher" (§3.6).
+5. **Deliberation helps in some cells and not others.** o3 games most at its lowest reasoning effort. DeepSeek's thinking removes gaming in the base cell and carries it in the reversed cell. Asking for the reasoning first suppresses gemini fully, and DeepSeek and o3 only partly (§3.7).
 
 ---
 
